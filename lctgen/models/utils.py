@@ -7,7 +7,13 @@ from functools import partial
 import tqdm
 from PIL import Image
 
-from trafficgen.utils.visual_init import get_heatmap, draw, draw_seq, draw_seq_map
+from trafficgen.utils.visual_init import (
+    get_heatmap,
+    draw,
+    draw_seq,
+    draw_seq_map,
+    draw_seq_for_gif,
+)
 from trafficgen.utils.utils import get_agent_coord_from_vec
 from trafficgen.utils.data_process.agent_process import WaymoAgent
 
@@ -60,7 +66,9 @@ def visualize_map(data):
     return draw_seq_map(center, other=rest, edge=bound, save_np=True)
 
 
-def visualize_input_seq(data, agents=None, traj=None, sort_agent=True, clip_size=True):
+def visualize_input_seq(
+    data, agents=None, traj=None, sort_agent=True, clip_size=True, gif=False
+):
     MIN_LENGTH = 4.0
     MIN_WIDTH = 1.5
 
@@ -90,7 +98,10 @@ def visualize_input_seq(data, agents=None, traj=None, sort_agent=True, clip_size
                 agents[i].length_width, [MIN_LENGTH, MIN_WIDTH], [10.0, 5.0]
             )
 
-    return draw_seq(center, agents, traj=traj, other=rest, edge=bound, save_np=True)
+    if not gif:
+        return draw_seq(center, agents, traj=traj, other=rest, edge=bound, save_np=True)
+    else:
+        return draw_seq_for_gif(center, agents, traj=traj, other=rest, edge=bound)
 
 
 def visualize_query_heatmaps(data, output):

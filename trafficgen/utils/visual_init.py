@@ -298,6 +298,170 @@ def draw_seq(
     return plt
 
 
+def draw_seq_for_gif(
+    center,
+    agents,
+    traj=None,
+    other=None,
+    heat_map=False,
+    edge=None,
+    path="../vis",
+    abn_idx=None,
+):
+    images = []
+    for t in range(traj.shape[0]):
+        plt.switch_backend("agg")
+
+        fig, ax = plt.subplots(figsize=(10, 10))
+        plt.axis("equal")
+
+        shapes = []
+        collide = []
+        poly = agents[0].get_polygon()[0]
+        shapes.append(poly)
+        for i in range(1, len(agents)):
+            intersect = False
+            poly = agents[i].get_polygon()[0]
+            for shape in shapes:
+                if poly.intersects(shape):
+                    intersect = True
+                    collide.append(i)
+                    break
+            if not intersect:
+                shapes.append(poly)
+
+        colors = [
+            "tab:red",
+            "tab:blue",
+            "tab:orange",
+            "tab:green",
+            "tab:purple",
+            "tab:brown",
+            "tab:pink",
+            "tab:gray",
+            "tab:olive",
+            "tab:cyan",
+        ]
+
+        lane_color = "black"
+        alpha = 0.12
+        linewidth = 3
+
+        if heat_map:
+            lane_color = "white"
+            alpha = 0.2
+            linewidth = 6
+        ax.axis("off")
+
+        for j in range(center.shape[0]):
+            traf_state = center[j, -1]
+
+            x0, y0, x1, y1 = center[j, :4]
+
+            if x0 == 0:
+                break
+            ax.plot((x0, x1), (y0, y1), "--", color=lane_color, linewidth=1, alpha=0.2)
+
+            if traf_state == 1:
+                color = "red"
+                ax.plot(
+                    (x0, x1),
+                    (y0, y1),
+                    color=color,
+                    alpha=alpha,
+                    linewidth=linewidth,
+                    zorder=5000,
+                )
+            elif traf_state == 2:
+                color = "yellow"
+                ax.plot(
+                    (x0, x1),
+                    (y0, y1),
+                    color=color,
+                    alpha=alpha,
+                    linewidth=linewidth,
+                    zorder=5000,
+                )
+            elif traf_state == 3:
+                color = "green"
+                ax.plot(
+                    (x0, x1),
+                    (y0, y1),
+                    color=color,
+                    alpha=alpha,
+                    linewidth=linewidth,
+                    zorder=5000,
+                )
+
+        if edge is not None:
+            for j in range(len(edge)):
+
+                # if lane[j, k, -1] == 0: continue
+                x0, y0, x1, y1 = edge[j, :4]
+                if x0 == 0:
+                    break
+                ax.plot((x0, x1), (y0, y1), lane_color, linewidth=1.5)
+                # ax.arrow(x0, y0, x1-x0, y1-y0,head_width=1.5,head_length=0.75,width = 0.1)
+        if other is not None:
+            for j in range(len(other)):
+
+                # if lane[j, k, -1] == 0: continue
+                x0, y0, x1, y1 = other[j, :4]
+                if x0 == 0:
+                    break
+                ax.plot((x0, x1), (y0, y1), lane_color, linewidth=0.7, alpha=0.9)
+
+        for i in range(len(agents)):
+            agent_position = traj[t, i, :]  # ! test here
+            if abs(agent_position[0]) > 50 or abs(agent_position[1]) > 50:
+                continue
+
+            # if i in collide: continue
+            if i == 0:
+                col = colors[0]
+            else:
+                ind = (i - 1) % 9 + 1
+                col = colors[ind]
+            if traj is not None:
+                traj_i = traj[:, i]
+                len_t = traj_i.shape[0] - 1
+                for j in range(len_t):
+                    x0, y0 = traj_i[j]
+                    x1, y1 = traj_i[j + 1]
+
+                    if abs(x0) < 60 and abs(y0) < 60 and abs(x1) < 60 and abs(y1) < 60:
+                        ax.plot(
+                            (x0, x1),
+                            (y0, y1),
+                            "-",
+                            color=col,
+                            linewidth=1.8,
+                            marker=".",
+                            markersize=3,
+                        )
+
+            agent = agents[i]
+            rect = agent.get_rect()[0]
+            # move rect center to agent_position
+            offset = agent_position - np.mean(rect, axis=0)
+            rect += offset
+            rect = plt.Polygon(
+                rect, edgecolor="black", facecolor=col, linewidth=0.5, zorder=10000
+            )
+            ax.add_patch(rect)
+
+        # ax.set_facecolor('black')
+        plt.xlim([-60, 60])
+        plt.ylim([-60, 60])
+
+        fig.canvas.draw()
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype="uint8")
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        images.append(image)
+
+    return images
+
+
 def draw_traj(traj, save_np=False, save=False, edge=None, path="../vis", abn_idx=None):
     plt.switch_backend("agg")
 

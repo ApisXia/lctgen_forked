@@ -2,6 +2,7 @@
 
 import os
 import torch
+import imageio
 from torch.utils.data import DataLoader
 
 from PIL import Image
@@ -32,6 +33,13 @@ def vis_decode(batch, ae_output):
     return Image.fromarray(img)
 
 
+def vis_decode_gif(batch, ae_output):
+    imgs = visualize_input_seq(
+        batch, agents=ae_output[0]["agent"], traj=ae_output[0]["traj"], gif=True
+    )
+    return imgs
+
+
 cfg_file = "cfgs/demo_inference.yaml"
 cfg = get_config(cfg_file)
 
@@ -42,7 +50,7 @@ model = model_cls.load_from_checkpoint(
 # print(model.eval())
 
 
-def gen_scenario_from_gpt_text(llm_text, cfg, model, map_vecs, map_ids):
+def gen_scenario_from_gpt_text(llm_text, cfg, model, map_vecs, map_ids, gif=False):
 
     # format LLM output to Structured Representation (agent and map vectors)
     MAX_AGENT_NUM = 32
@@ -76,7 +84,10 @@ def gen_scenario_from_gpt_text(llm_text, cfg, model, map_vecs, map_ids):
         pred_motion=True,
     )
 
-    return vis_decode(batch, output_scene)
+    if not gif:
+        return vis_decode(batch, output_scene)
+    else:
+        return vis_decode_gif(batch, output_scene)
 
 
 # load data
@@ -146,3 +157,6 @@ map_vecs, map_ids = load_all_map_vectors(map_data_file)
 llm_snapshot = gen_scenario_from_gpt_text(llm_result, cfg, model, map_vecs, map_ids)
 # save the image
 llm_snapshot.save("llm_snapshot.png")
+
+images = gen_scenario_from_gpt_text(llm_result, cfg, model, map_vecs, map_ids, gif=True)
+imageio.mimsave(f"llm.animation.gif", images, fps=30)
