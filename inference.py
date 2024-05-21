@@ -140,7 +140,8 @@ llm_model = registry.get_llm("codex")(llm_cfg)
 # read openai api key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-query = "The scene in an intersection which is chill and safe"  # @param {type:"string"}
+# query = "The scene in an intersection which is chill and safe"
+query = "V1 and V2 collide at an intersection of two urban trafficways, with V2 striking the left side of V1"
 
 llm_result = llm_model.forward(query)
 
@@ -159,4 +160,4 @@ llm_snapshot = gen_scenario_from_gpt_text(llm_result, cfg, model, map_vecs, map_
 llm_snapshot.save("llm_snapshot.png")
 
 images = gen_scenario_from_gpt_text(llm_result, cfg, model, map_vecs, map_ids, gif=True)
-imageio.mimsave(f"llm.animation.gif", images, fps=30)
+imageio.mimsave(f"llm_animation.gif", images, fps=20)
